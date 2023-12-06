@@ -6,11 +6,21 @@ window.addEventListener('load', function() {
         console.log('MetaMask not detected');
     }
 
-    //Get TXT record
-    fetch('https://dns.google.com/resolve?name=example.com&type=TXT')
-    .then(response => response.json())
-    .then(data => console.log(data))
-    .catch(error => console.error('Error:', error));
+    // Get TXT record
+    let txt = "";
+    fetch('https://dns.google.com/resolve?name=shubhamraj.com&type=TXT')
+        .then(response => response.json())
+        .then(data => {
+            if (data.Answer) {
+                txt = "";
+                data.Answer.forEach(record => {
+                    txt += record.data + "\n";
+                });
+                // Update the div here, after the TXT records have been fetched
+                document.getElementById('txt').innerText = txt;
+            }
+        })
+        .catch(error => console.error('Error:', error));
 
     const sendButton = document.getElementById('sendButton');
     sendButton.addEventListener('click', () => {
