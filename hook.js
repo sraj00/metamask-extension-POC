@@ -1,9 +1,19 @@
 var originalSend = web3.eth.sendTransaction;
 
 web3.eth.sendTransaction = function() {
-    console.log("Intercepted web3.eth.sendTransaction call");
     var stack = new Error().stack;
-    console.log(stack);
+    var stackLines = stack.split("\n");
 
-    return originalSend.apply(this, arguments);
+    var relevantStackLines = stackLines.slice(2);
+
+    var formattedLines = relevantStackLines.map(function(line) {
+        return line.trim().replace(/^at\s+/gm, '');
+    });
+
+    originalSend.apply(console, ["Stack trace:"]);
+    formattedLines.forEach(function(line) {
+        originalSend.apply(console, [line]);
+    });
+
+    originalSend.apply(console, arguments);
 };
