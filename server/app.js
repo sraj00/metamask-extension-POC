@@ -6,6 +6,12 @@ window.addEventListener('load', function() {
         console.log('MetaMask not detected');
     }
 
+    //Get TXT record
+    fetch('https://dns.google.com/resolve?name=example.com&type=TXT')
+    .then(response => response.json())
+    .then(data => console.log(data))
+    .catch(error => console.error('Error:', error));
+
     const sendButton = document.getElementById('sendButton');
     sendButton.addEventListener('click', () => {
         const address = document.getElementById('address').value;
