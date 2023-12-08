@@ -7,12 +7,23 @@ contract DomainRegistry{
         address[] addresses;
     }
 
+    address public admin;
+
     // Mapping to store domain addresses
     mapping (string => Addresses) registry;
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "Only admin can perform this action");
+        _;
+    }
 
     modifier onlyDomainOwner(string memory domain) {
         require(registry[domain].owner == address(0) || registry[domain].owner == msg.sender, "Only domain owner can perform this action");
         _;
+    }
+
+    constructor() {
+        admin = msg.sender;
     }
 
     // Function to add a mapping between a domain and contract address
@@ -28,7 +39,7 @@ contract DomainRegistry{
     }
 
     // Function to remove a mapping between a domain and contract address
-    function removeMapping(string memory domain, address contractAddress) external onlyDomainOwner(domain) {
+    function removeMapping(string memory domain, address contractAddress) external onlyAdmin onlyDomainOwner(domain) {
         for(uint i = 0; i < registry[domain].addresses.length; i++){
             if(registry[domain].addresses[i] == contractAddress){
                 delete registry[domain].addresses[i];
@@ -39,5 +50,10 @@ contract DomainRegistry{
     // Function to get all contract addresses associated with a domain
     function getMapping(string memory domain) external view returns(address[] memory){
         return registry[domain].addresses;
+    }
+
+    // Function to delete an unwanted entry if it was maliciously registered
+    function deleteEntry(string memory domain) external onlyAdmin {
+        delete registry[domain];
     }
 }
