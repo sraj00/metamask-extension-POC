@@ -6,6 +6,25 @@ window.addEventListener('load', function() {
         console.log('MetaMask not detected');
     }
 
+    // Get TXT record
+    let txt = "";
+    fetch('https://dns.google.com/resolve?name=shubhamraj.com&type=TXT')
+        .then(response => response.json())
+        .then(data => {
+            if (data.Answer) {
+                txt = "";
+                data.Answer.forEach(record => {
+                    txt += record.data + "\n";
+                });
+                // Update the div here, after the TXT records have been fetched
+                document.getElementById('txt').innerText = txt;
+            }
+        })
+        .catch(error => console.error('Error:', error));
+
+    // check file signature
+    txt += "\n" + checkSignature();
+
     const sendButton = document.getElementById('sendButton');
     sendButton.addEventListener('click', () => {
         const address = document.getElementById('address').value;
@@ -28,4 +47,23 @@ function sendEther(address, amount) {
             console.error(error);
         });
     });
+}
+
+function verifySignature(signature, pubkey, data) {
+    // Assuming you have your public key, signature, and data as strings
+    var data = "data to verify";
+
+    // Create a new RSAKey object
+    var rsa = new KJUR.crypto.Signature({alg: "SHA256withRSA"});
+
+    // Initialize the RSA object with the public key
+    rsa.init(publicKey);
+
+    // Update the RSA object with the data
+    rsa.updateString(data);
+
+    // Verify the signature
+    var isValid = rsa.verify(signature);
+
+    console.log(isValid ? 'Valid signature' : 'Invalid signature');
 }
