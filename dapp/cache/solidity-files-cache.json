@@ -72,6 +72,41 @@
       "artifacts": [
         "console"
       ]
+    },
+    "/Users/akshar.rawalcoinbase.com/Downloads/metamask-extension-POC/dapp/contracts/DomainRegistry.sol": {
+      "lastModificationDate": 1702056493409,
+      "contentHash": "d1482c49a108f04eb1c1d8b154c02746",
+      "sourceName": "contracts/DomainRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.7",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.7"
+      ],
+      "artifacts": [
+        "DomainRegistry"
+      ]
     }
   }
 }
