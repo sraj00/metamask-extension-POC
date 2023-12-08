@@ -39,7 +39,7 @@ contract DomainRegistry{
     }
 
     // Function to remove a mapping between a domain and contract address
-    function removeMapping(string memory domain, address contractAddress) external onlyAdmin onlyDomainOwner(domain) {
+    function removeMapping(string memory domain, address contractAddress) external onlyDomainOwner(domain) {
         for(uint i = 0; i < registry[domain].addresses.length; i++){
             if(registry[domain].addresses[i] == contractAddress){
                 delete registry[domain].addresses[i];
@@ -53,7 +53,7 @@ contract DomainRegistry{
     }
 
     // Function to delete an unwanted entry if it was maliciously registered
-    function deleteEntry(string memory domain) external onlyAdmin {
+    function deleteDomain(string memory domain) external onlyAdmin {
         delete registry[domain];
     }
 }
