@@ -37,11 +37,13 @@ describe('DomainRegistry', (accounts) => {
   it("Should remove mapping", async function () {
     await domainRegistry.addMapping(domain, contractAddresses[0]);
     await domainRegistry.addMapping(domain, contractAddresses[1]);
+
     await domainRegistry.removeMapping(domain, contractAddresses[0]);
     let result = await domainRegistry.getMapping(domain);
     result = result.map(r => r.toLowerCase());
     expect(result).to.not.include(contractAddresses[0]);
     expect(result).to.include(contractAddresses[1]);
+    
     await domainRegistry.removeMapping(domain, contractAddresses[1]);
     result = await domainRegistry.getMapping(domain);
     result = result.map(r => r.toLowerCase());
