@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign SHA256 Hash</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+    <h1>Sign SHA256 Hash</h1>
+    <div>
+        <label for="textToHash">Text to Hash:</label>
+        <textarea id="textToHash" rows="4" cols="50"></textarea>
+    </div>
+    <div>
+        <label for="signerAddress">Signer Address:</label>
+        <input type="text" id="signerAddress" placeholder="0x...">
+    </div>
+    <button id="signButton">Sign</button>
+    <p id="signatureResult"></p>
+
+    <script src="sign.js"></script>
+</body>
+</html>
