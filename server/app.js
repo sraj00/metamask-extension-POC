@@ -1,69 +1,39 @@
-window.addEventListener('load', function() {
+window.addEventListener('load', () => {
     if (typeof window.ethereum !== 'undefined') {
         window.web3 = new Web3(window.ethereum);
-        window.ethereum.enable();
+        startApp();
     } else {
-        console.log('MetaMask not detected');
+        console.log('Please install MetaMask!');
     }
-
-    // Get TXT record
-    let txt = "";
-    fetch('https://dns.google.com/resolve?name=shubhamraj.com&type=TXT')
-        .then(response => response.json())
-        .then(data => {
-            if (data.Answer) {
-                txt = "";
-                data.Answer.forEach(record => {
-                    txt += record.data + "\n";
-                });
-                // Update the div here, after the TXT records have been fetched
-                document.getElementById('txt').innerText = txt;
-            }
-        })
-        .catch(error => console.error('Error:', error));
-
-    // check file signature
-    txt += "\n" + checkSignature();
-
-    const sendButton = document.getElementById('sendButton');
-    sendButton.addEventListener('click', () => {
-        const address = document.getElementById('address').value;
-        const amount = document.getElementById('amount').value;
-        sendEther(address, amount);
-    });
 });
 
-function sendEther(address, amount) {
-    web3.eth.getAccounts().then(accounts => {
-        const sender = accounts[0];
-        const weiAmount = web3.utils.toWei(amount, 'ether');
-        web3.eth.sendTransaction({
-            from: sender,
-            to: address,
-            value: weiAmount
-        }).then(tx => {
-            console.log('Transaction:', tx);
-        }).catch(error => {
-            console.error(error);
-        });
-    });
+function startApp() {
+    const transferButton = document.getElementById('transferButton');
+    transferButton.addEventListener('click', transferTokens);
 }
 
-function verifySignature(signature, pubkey, data) {
-    // Assuming you have your public key, signature, and data as strings
-    var data = "data to verify";
+async function transferTokens() {
+    const receiverAddress = document.getElementById('receiverAddress').value;
+    const amount = document.getElementById('amount').value;
 
-    // Create a new RSAKey object
-    var rsa = new KJUR.crypto.Signature({alg: "SHA256withRSA"});
+    if (!receiverAddress || !amount) {
+        return alert('Please enter both receiver address and amount.');
+    }
 
-    // Initialize the RSA object with the public key
-    rsa.init(publicKey);
+    const contractAddress = 'YOUR_CONTRACT_ADDRESS';
+    const abi = [/* Your Contract's ABI */];
+    const contract = new web3.eth.Contract(abi, contractAddress);
 
-    // Update the RSA object with the data
-    rsa.updateString(data);
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const account = accounts[0];
 
-    // Verify the signature
-    var isValid = rsa.verify(signature);
+        const amountToSend = web3.utils.toWei(amount, 'ether'); // Convert to wei value
+        await contract.methods.transfer(receiverAddress, amountToSend).send({ from: account });
 
-    console.log(isValid ? 'Valid signature' : 'Invalid signature');
+        alert('Transfer successful!');
+    } catch (error) {
+        console.error(error);
+        alert('An error occurred!');
+    }
 }
