@@ -57,11 +57,7 @@ function getDomainFromUrl(url) {
     return hostname;
 }
 
-
-// Replace with the domain name you want to query
 const domainName = getDomainFromUrl(window.location.href);
-
-// Execute the function
 getDomainMappings(domainName);
 
 // Get TXT record
@@ -80,22 +76,18 @@ fetch('https://dns.google.com/resolve?name=shubhamraj.com&type=TXT')
     })
     .catch(error => console.error('Error:', error));
 
-function verifySignature(signature, pubkey, data) {
-    // Assuming you have your public key, signature, and data as strings
-    var data = "data to verify";
-
-    // Create a new RSAKey object
-    var rsa = new KJUR.crypto.Signature({alg: "SHA256withRSA"});
-
-    // Initialize the RSA object with the public key
-    rsa.init(publicKey);
-
-    // Update the RSA object with the data
-    rsa.updateString(data);
-
-    // Verify the signature
-    var isValid = rsa.verify(signature);
-
-    console.log(isValid ? 'Valid signature' : 'Invalid signature');
+async function verifySignature(hash, signature) {
+    try {
+        const address = await web3.eth.personal.ecRecover(hash, signature);
+        return address;
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
 }
 
+// Example usage
+const hash = '0x...' // Your hash here
+const signature = '...' // Your signature here
+const address = await verifySignature(hash, signature);
+console.log(address); // This should be the signer's address if the signature is valid
