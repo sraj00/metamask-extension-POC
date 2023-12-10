@@ -106,8 +106,9 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
     }
 
     // Function to get all contract addresses associated with a domain
-    function getMapping(string memory domain) external view returns(address[] memory){
-        return registry[domain].addresses;
+     function getMapping(string memory domain) external view returns (address owner, address[] memory addresses) {
+        Addresses storage addr = registry[domain];
+        return (addr.owner, addr.addresses);
     }
 
     // Function to delete an unwanted entry if it was maliciously registered
