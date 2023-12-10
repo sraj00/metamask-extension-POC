@@ -48,12 +48,28 @@ contract DomainRegistry{
     }
 
     // Function to get all contract addresses associated with a domain
-    function getMapping(string memory domain) external view returns(address[] memory){
-        return registry[domain].addresses;
+     function getMapping(string memory domain) external view returns (address owner, address[] memory addresses) {
+        Addresses storage addr = registry[domain];
+        return (addr.owner, addr.addresses);
     }
 
     // Function to delete an unwanted entry if it was maliciously registered
     function deleteDomain(string memory domain) external onlyAdmin {
         delete registry[domain];
+    }
+
+        // Event to log fallback calls
+    event FallbackCalled(address caller, uint amount, bytes data);
+
+    // Fallback function
+    fallback() external payable {
+        // Emit an event to log fallback function call
+        emit FallbackCalled(msg.sender, msg.value, msg.data);
+    }
+
+    // Optional: Receive function for handling plain Ether transfers
+    receive() external payable {
+        // Emit event to log Ether received
+        emit FallbackCalled(msg.sender, msg.value, "");
     }
 }

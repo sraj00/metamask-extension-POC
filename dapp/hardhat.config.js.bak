@@ -1,0 +1,20 @@
+require("@nomicfoundation/hardhat-toolbox");
+require('dotenv').config();
+
+// The next line is part of the sample project, you don't need it in your
+// project. It imports a Hardhat task definition, that can be used for
+// testing the frontend.
+require("./tasks/faucet");
+
+//const INFURA_PROJECT_ID = '56ca2f79a1ee42cab9f7b4788ab6b0dd';
+//const PRIVATE_KEY = '56ca2f79a1ee42cab9f7b4788ab6b0dd';
+
+//module.exports = {
+//  solidity: "0.8.7",
+//  networks: {
+//    base_goerli: {
+//      url: `https://base-goerli.infura.io/v3/${INFURA_PROJECT_ID}`,
+//      accounts: [`0x${PRIVATE_KEY}`]
+//    }
+//  }
+//};

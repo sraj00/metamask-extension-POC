@@ -16,10 +16,21 @@ document.getElementById('signButton').addEventListener('click', async () => {
 
     const hash = CryptoJS.SHA256(textToHash).toString();
     const hexHash = '0x' + hash;
+    console.log(hexHash);
 
     try {
-        const signature = await web3.eth.sign(hexHash, signerAddress);
-        document.getElementById('signatureResult').innerText = 'Signature: ' + signature;
+	const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const account = accounts[0];
+        // const signature = await web3.eth.sign(hexHash, signerAddress);
+        // document.getElementById('signatureResult').innerText = 'Signature: ' + signature + '   hash:' + hexHash + '    address:' + signerAddress;
+        const message = "hello";
+        const messageHash = web3.utils.sha3(message);
+        const signature = await web3.eth.sign(messageHash, signerAddress);
+        document.getElementById('signatureResult').innerText = 'Signature: ' + signature + '   hash:' + hexHash + '    address:' + signerAddress;
+
+// To recover the address
+const recoveredAddress = await web3.eth.personal.ecRecover(messageHash, signature);
+console.log(recoveredAddress + '\n' + messageHash + '\n' + signature);
     } catch (error) {
         console.error(error);
         alert('An error occurred!');
