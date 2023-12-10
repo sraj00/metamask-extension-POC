@@ -3,6 +3,7 @@ pragma solidity ^0.8.7;
 
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 
 contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
