@@ -3,6 +3,7 @@ pragma solidity ^0.8.7;
 
 import "@chainlink/contracts/src/v0.8/ChainlinkClient.sol";
 import "@chainlink/contracts/src/v0.8/shared/access/ConfirmedOwner.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 
 contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
@@ -12,6 +13,11 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
         address owner;
         address[] addresses;
     }
+    
+    struct DomainRequest {
+        string domain;
+        address contractAddress;
+    }
 
     address public admin;
     string public txtRecord;
@@ -20,7 +26,7 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
 
     // Mapping to store domain addresses
     mapping (string => Addresses) registry;
-    mapping(bytes32 => string) private requestToDomain;
+    mapping(bytes32 => DomainRequest) private requestToDomain;
     mapping(string => address) private pendingRegistrations;
 
     modifier onlyAdmin() {
@@ -37,7 +43,7 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
         admin = msg.sender;
         setChainlinkToken(0x6D0F8D488B669aa9BA2D0f0b7B75a88bf5051CD3);
         setChainlinkOracle(0xeE1A1AF4e004AEC46cbF329015634E7A982E405e);
-        jobId = "7da2702f37fd48e5b1b9a5715e3509b6";
+        jobId = "cd428539aec34449a38cbc45d9a52005";
         fee = (1 * LINK_DIVISIBILITY) / 10;
     }
 
@@ -49,28 +55,51 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
 
         Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfillDNSVerification.selector);
         req.add('get', 'https://dns.google.com/resolve?name=${domain}&type=TXT');
-        req.add('path', 'Answer,-1,data');
         
         bytes32 requestId = sendChainlinkRequest(req, fee);
-        requestToDomain[requestId] = domain;
+        requestToDomain[requestId] = DomainRequest(domain, contractAddress);
         pendingRegistrations[domain] = msg.sender;
     }
 
         // New function to handle Chainlink callback
     function fulfillDNSVerification(bytes32 requestId, bytes memory bytesData) public recordChainlinkFulfillment(requestId) {
-        string memory domain = requestToDomain[requestId];
+        DomainRequest memory domainRequest = requestToDomain[requestId];
+        string memory domain = domainRequest.domain;
+        address contractAddress = domainRequest.contractAddress;
         address user = pendingRegistrations[domain];
 
-        // DNS Verification logic...
-        // If successful, finalize registration
-        //if (true){
-        //    registry[domain].owner = user;
-        //    registry[domain].addresses.push(contractAddress);
-        //}
+        address recoveredSigner = recoverSigner(domain, bytesData);
+        
+        if (recoveredSigner == user){
+            registry[domain].owner = user;
+            registry[domain].addresses.push(contractAddress);
+        }
 
         // Clean up
         delete requestToDomain[requestId];
         delete pendingRegistrations[domain];
+    }
+
+    function toEthSignedMessageHash(bytes memory message) internal pure returns (bytes32) {
+        return
+            keccak256(bytes.concat("\x19Ethereum Signed Message:\n", bytes(Strings.toString(message.length)), message));
+    }
+
+    function recoverSigner(string memory _message, bytes memory _sig) public pure returns (address) {
+        bytes32 ethSignedMessageHash = toEthSignedMessageHash(bytes(_message));
+
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        assembly {
+            r := mload(add(_sig, 32))
+            s := mload(add(_sig, 64))
+            v := byte(0, mload(add(_sig, 96)))
+        }
+
+        if (v < 27) v += 27;
+        return ecrecover(ethSignedMessageHash, v, r, s);
     }
 
     // Function to remove a mapping between a domain and contract address
@@ -83,8 +112,9 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
     }
 
     // Function to get all contract addresses associated with a domain
-    function getMapping(string memory domain) external view returns(address[] memory){
-        return registry[domain].addresses;
+     function getMapping(string memory domain) external view returns (address owner, address[] memory addresses) {
+        Addresses storage addr = registry[domain];
+        return (addr.owner, addr.addresses);
     }
 
     // Function to delete an unwanted entry if it was maliciously registered
