@@ -7,7 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 </head>
 <body>
-    <h1>Sign SHA256 Hash</h1>
+    <h1>Prove ownership of domain</h1>
     <!-- <div>
         <label for="textToHash">Text to Hash:</label>
         <textarea id="textToHash" rows="4" cols="50"></textarea>
@@ -20,8 +20,8 @@
     <p id="signatureResult"></p> -->
 
     <form id="personal_sign">
-        <input type="text" id="textToHash" placeholder="Enter text to hash">
-        <input type="text" id="signerAddress" placeholder="Enter signer address">
+        <input type="text" id="textToHash" placeholder="Enter domain name that you want to map">
+        <input type="text" id="signerAddress" placeholder="Enter signer address (this should be the person who registered the mapping)">
         <button type="submit">Sign Message</button>
     </form>
     <div id="signatureResult"></div>

@@ -27,7 +27,7 @@ async function validateSign() {
         let signature = await doPersonalSign(formattedMessage, signerAddress);
         let signatureResultElement = document.getElementById('signatureResult');
         if (signatureResultElement) {
-            signatureResultElement.innerText = 'Signature: ' + signature + '\nHash: ' + formattedMessage + '\nAddress: ' + signerAddress;
+            signatureResultElement.innerText = 'Signature: ' + signature + '\nHash: ' + formattedMessage + '\nAddress: ' + signerAddress + '\n\n\n Add this to the txt record of your domain: verify-domain=' + signature;
         }
 
         const recoveredAddress = await web3.eth.accounts.recover(message, signature);
