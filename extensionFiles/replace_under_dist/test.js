@@ -44,34 +44,33 @@ window.addEventListener('DOMContentLoaded', function() {
           return response.json();
       })
       .then(data => {
+          let verificationCode = null;
           console.log('Response data:', data);
           if (data.Answer) {
-              txt = "";
               data.Answer.forEach(record => {
-                  txt += record.data + "\n";
+                  if (record.data.startsWith('verify-domain=')) {
+                      console.log('Verification code found:', record.data);
+                      verificationCode = record.data.split('verify-domain=')[1].replace('"', '');
+                  }
               });
-              console.log('TXT records:', txt);
-              // Update the div here, after the TXT records have been fetched
-              //document.getElementById('txt').innerText = txt;
+
+              if (verificationCode) {
+                  console.log('Verification code:', verificationCode);
+                  injectScript(domain, verificationCode); // Call injectScript with the verification code
+              }
           }
       })
       .catch(error => console.error('Error:', error));
 
-  const sendButton = document.getElementById('sendButton');
-  sendButton.addEventListener('click', () => {
-      console.log('Send button clicked');
-      const address = document.getElementById('address').value;
-      const amount = document.getElementById('amount').value;
-      console.log('Sending Ether to:', address, 'Amount:', amount);
-      sendEther(address, amount);
-  });
 });
 
 
 // This function will be injected into the page to access the Web3 provider
-function injectScript() {
+function injectScript(domain, verificationCode) {
   const scriptContent = `
     (function() {
+        const verificationCode = "${verificationCode}";
+        const domain = "${domain}";
         if (typeof window.ethereum !== 'undefined' || typeof window.web3 !== 'undefined') {
             // Use MetaMask's provider
             const web3 = new Web3(window.ethereum || window.web3.currentProvider);
@@ -83,21 +82,21 @@ function injectScript() {
             // Creating a contract instance
             const contract = new web3.eth.Contract(abi, contractAddress);
 
-            console.log('Contract instance:', contract);
-            console.log('Contract address:', contract.options.address);
+            // console.log('Contract instance:', contract);
+            // console.log('Contract address:', contract.options.address);
 
             // Get the domain from the current tab's URL
             (async () => {
                 try {
-                    const result = await contract.methods.getMapping('google.com').call();
-                    console.log('Fetching owner and addresses for domain google.com:', result);
+                    const result = await contract.methods.getMapping(domain).call();
+                    console.log('Fetching owner and addresses for domain - ' + domain + ': ', result);
 
 
                       // Now verify the signature
-                      const hash = 'hello420';
-                      const signature = '0x6daa9787de86f0ffee4b6650f1a8b426766236791ddc3c365df71689d836fe6c76bab8967748e8cee861b3f96418d669a325babded0b80c8919369034a3ea0fa1b';
+                      const message = domain;
+                      const signature = verificationCode;
 
-                      const address = await verifySignature(hash, signature);
+                      const address = await verifySignature(message, signature);
                       console.log('Recovered address:', address);
 
                       if (address === result.owner) {
@@ -112,27 +111,15 @@ function injectScript() {
 
 
             // verify the signature
-            async function verifySignature(hash, signature) {
+            async function verifySignature(message, signature) {
               try {
-                  const address = await web3.eth.accounts.recover(hash, signature);
+                  const address = await web3.eth.accounts.recover(message, signature);
                   return address;
               } catch (error) {
                   console.error('Error verifying signature:', error);
                   return null;
               }
           }
-
-            // verifySignature('0x2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824', '0x4c4ff13d847990af615cbc8452a58bc917d7abb9d0438430d724db9a9fc4e3320a98a37b51d5a6a0f8c9074a3d63375f759f816a945fb6eabb0c12f7a49e61811c')
-            // .then(address => {
-            //     console.log('Recovered address:', address);
-            //     if (address == result.owner) {
-            //       console.log('Signature verified');
-            //     }
-            //     // Further logic based on the recovered address
-            // })
-            // .catch(error => {
-            //     console.error('Error in signature verification:', error);
-            // });
 
         } else {
             console.log('MetaMask is not installed');
@@ -149,14 +136,14 @@ function injectScript() {
 // Inject Web3.js from a CDN
 const web3Script = document.createElement('script');
 web3Script.src = 'https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js';
-web3Script.onload = injectScript; // Inject your script after Web3.js loads
+// web3Script.onload = injectScript; // Inject your script after Web3.js loads
 (document.head || document.documentElement).appendChild(web3Script);
 console.log("I am here");
 
 // Call the injectScript function when the page loads
-window.addEventListener('DOMContentLoaded', () => {
-  // Wait for Web3.js to load before calling the function
-  if (typeof Web3 !== 'undefined') {
-      injectScript();
-  }
-});
+// window.addEventListener('DOMContentLoaded', () => {
+//   // Wait for Web3.js to load before calling the function
+//   if (typeof Web3 !== 'undefined') {
+//       injectScript();
+//   }
+// });
