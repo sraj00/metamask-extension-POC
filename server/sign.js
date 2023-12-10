@@ -6,33 +6,53 @@ window.addEventListener('load', () => {
     }
 });
 
-document.getElementById('signButton').addEventListener('click', async () => {
-    const textToHash = document.getElementById('textToHash').value;
-    const signerAddress = document.getElementById('signerAddress').value;
+document.getElementById("personal_sign").addEventListener("submit", function(event) {
+    event.preventDefault();
+    validateSign();
+});
 
-    if (!textToHash || !signerAddress) {
+async function validateSign() {
+    let messageElement = document.getElementById('textToHash');
+    let signerAddressElement = document.getElementById('signerAddress');
+    let message = messageElement ? messageElement.value : '';
+    let signerAddress = signerAddressElement ? signerAddressElement.value : '';
+
+    if (!message || !signerAddress) {
         return alert('Please enter both text and signer address.');
     }
 
-    const hash = CryptoJS.SHA256(textToHash).toString();
-    const hexHash = '0x' + hash;
-    console.log(hexHash);
+    const formattedMessage = web3.utils.utf8ToHex(message);
 
     try {
-	const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const account = accounts[0];
-        // const signature = await web3.eth.sign(hexHash, signerAddress);
-        // document.getElementById('signatureResult').innerText = 'Signature: ' + signature + '   hash:' + hexHash + '    address:' + signerAddress;
-        const message = "hello";
-        const messageHash = web3.utils.sha3(message);
-        const signature = await web3.eth.sign(messageHash, signerAddress);
-        document.getElementById('signatureResult').innerText = 'Signature: ' + signature + '   hash:' + hexHash + '    address:' + signerAddress;
+        let signature = await doPersonalSign(formattedMessage, signerAddress);
+        let signatureResultElement = document.getElementById('signatureResult');
+        if (signatureResultElement) {
+            signatureResultElement.innerText = 'Signature: ' + signature + '\nHash: ' + formattedMessage + '\nAddress: ' + signerAddress;
+        }
 
-// To recover the address
-const recoveredAddress = await web3.eth.personal.ecRecover(messageHash, signature);
-console.log(recoveredAddress + '\n' + messageHash + '\n' + signature);
+        const recoveredAddress = await web3.eth.accounts.recover(message, signature);
+        console.log('final - ' + recoveredAddress);
+        if (signerAddress === recoveredAddress) {
+            console.log('Signature verified final');
+        } else {
+            console.log('Signature verification failed');
+        }
     } catch (error) {
         console.error(error);
         alert('An error occurred!');
     }
-});
+}
+
+function doPersonalSign(formattedMessage, from) {
+    return new Promise((resolve, reject) => {
+        web3.eth.personal.sign(formattedMessage, from, '')
+            .then(result => {
+                console.log("Signed: " + result);
+                resolve(result);
+            })
+            .catch(error => {
+                console.error('Error while signing:', error);
+                reject(error);
+            });
+    });
+}

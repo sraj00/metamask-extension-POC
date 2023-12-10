@@ -94,8 +94,8 @@ function injectScript() {
 
 
                       // Now verify the signature
-                      const hash = '0x2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824';
-                      const signature = '0x4c4ff13d847990af615cbc8452a58bc917d7abb9d0438430d724db9a9fc4e3320a98a37b51d5a6a0f8c9074a3d63375f759f816a945fb6eabb0c12f7a49e61811c';
+                      const hash = 'hello420';
+                      const signature = '0x6daa9787de86f0ffee4b6650f1a8b426766236791ddc3c365df71689d836fe6c76bab8967748e8cee861b3f96418d669a325babded0b80c8919369034a3ea0fa1b';
 
                       const address = await verifySignature(hash, signature);
                       console.log('Recovered address:', address);
@@ -114,7 +114,7 @@ function injectScript() {
             // verify the signature
             async function verifySignature(hash, signature) {
               try {
-                  const address = await web3.eth.personal.ecRecover('0x2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824', '0x4c4ff13d847990af615cbc8452a58bc917d7abb9d0438430d724db9a9fc4e3320a98a37b51d5a6a0f8c9074a3d63375f759f816a945fb6eabb0c12f7a49e61811c');
+                  const address = await web3.eth.accounts.recover(hash, signature);
                   return address;
               } catch (error) {
                   console.error('Error verifying signature:', error);
@@ -122,17 +122,17 @@ function injectScript() {
               }
           }
 
-            verifySignature('0x2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824', '0x4c4ff13d847990af615cbc8452a58bc917d7abb9d0438430d724db9a9fc4e3320a98a37b51d5a6a0f8c9074a3d63375f759f816a945fb6eabb0c12f7a49e61811c')
-            .then(address => {
-                console.log('Recovered address:', address);
-                if (address == result.owner) {
-                  console.log('Signature verified');
-                }
-                // Further logic based on the recovered address
-            })
-            .catch(error => {
-                console.error('Error in signature verification:', error);
-            });
+            // verifySignature('0x2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824', '0x4c4ff13d847990af615cbc8452a58bc917d7abb9d0438430d724db9a9fc4e3320a98a37b51d5a6a0f8c9074a3d63375f759f816a945fb6eabb0c12f7a49e61811c')
+            // .then(address => {
+            //     console.log('Recovered address:', address);
+            //     if (address == result.owner) {
+            //       console.log('Signature verified');
+            //     }
+            //     // Further logic based on the recovered address
+            // })
+            // .catch(error => {
+            //     console.error('Error in signature verification:', error);
+            // });
 
         } else {
             console.log('MetaMask is not installed');

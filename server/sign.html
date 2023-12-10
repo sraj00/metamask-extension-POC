@@ -8,7 +8,7 @@
 </head>
 <body>
     <h1>Sign SHA256 Hash</h1>
-    <div>
+    <!-- <div>
         <label for="textToHash">Text to Hash:</label>
         <textarea id="textToHash" rows="4" cols="50"></textarea>
     </div>
@@ -17,7 +17,14 @@
         <input type="text" id="signerAddress" placeholder="0x...">
     </div>
     <button id="signButton">Sign</button>
-    <p id="signatureResult"></p>
+    <p id="signatureResult"></p> -->
+
+    <form id="personal_sign">
+        <input type="text" id="textToHash" placeholder="Enter text to hash">
+        <input type="text" id="signerAddress" placeholder="Enter signer address">
+        <button type="submit">Sign Message</button>
+    </form>
+    <div id="signatureResult"></div>
 
     <script src="sign.js"></script>
 </body>
