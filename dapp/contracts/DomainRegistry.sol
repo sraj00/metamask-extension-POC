@@ -13,7 +13,7 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
         address owner;
         address[] addresses;
     }
-    
+
     struct DomainRequest {
         string domain;
         address contractAddress;
@@ -25,9 +25,14 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
     uint256 private fee;
 
     // Mapping to store domain addresses
-    mapping (string => Addresses) registry;
-    mapping(bytes32 => DomainRequest) private requestToDomain;
-    mapping(string => address) private pendingRegistrations;
+    mapping (string => Addresses) public registry;
+    mapping(bytes32 => DomainRequest) public requestToDomain;
+    mapping(string => address) public pendingRegistrations;
+
+    uint256 private dataIdCounter = 0;
+    mapping(uint256 => bytes) public requestData;
+
+    event DNSVerificationFulfilled(bytes32 indexed requestId, bytes message, address user, address contractAddress, bool success, bytes32 ethSignedMessageHash, address recoveredSigner);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can perform this action");
@@ -54,26 +59,41 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
         require(bytes(domain).length > 0, "Invalid domain name");
 
         Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfillDNSVerification.selector);
-        req.add('get', 'https://dns.google.com/resolve?name=${domain}&type=TXT');
-        
+        req.add('get', string(abi.encodePacked('https://dns.google.com/resolve?name=', domain, '&type=TXT')));
+
         bytes32 requestId = sendChainlinkRequest(req, fee);
         requestToDomain[requestId] = DomainRequest(domain, contractAddress);
         pendingRegistrations[domain] = msg.sender;
     }
 
+    function addMappingAdmin(string memory domain, address contractAddress) external onlyAdmin {
+        require(contractAddress != address(0), "Invalid contract address");
+        require(msg.sender != address(0), "Invalid sender address");
+        require(bytes(domain).length > 0, "Invalid domain name");
+        if (registry[domain].owner == address(0)) {
+            registry[domain].owner = msg.sender;
+        }
+        registry[domain].addresses.push(contractAddress);
+    }
         // New function to handle Chainlink callback
     function fulfillDNSVerification(bytes32 requestId, bytes memory bytesData) public recordChainlinkFulfillment(requestId) {
         DomainRequest memory domainRequest = requestToDomain[requestId];
+        uint256 dataId = dataIdCounter++;
+        requestData[dataId] = bytesData;
         string memory domain = domainRequest.domain;
         address contractAddress = domainRequest.contractAddress;
         address user = pendingRegistrations[domain];
 
+        bytes32 ethSignedMessageHash = toEthSignedMessageHash(bytes(domain));
         address recoveredSigner = recoverSigner(domain, bytesData);
-        
-        if (recoveredSigner == user){
+
+        bool success = recoveredSigner == user;
+        if (success){
             registry[domain].owner = user;
             registry[domain].addresses.push(contractAddress);
         }
+
+        emit DNSVerificationFulfilled(requestId, bytesData, user, contractAddress, success, ethSignedMessageHash, recoveredSigner);
 
         // Clean up
         delete requestToDomain[requestId];
@@ -81,8 +101,8 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
     }
 
     function toEthSignedMessageHash(bytes memory message) internal pure returns (bytes32) {
-        return
-            keccak256(bytes.concat("\x19Ethereum Signed Message:\n", bytes(Strings.toString(message.length)), message));
+        bytes32 hash = keccak256(bytes.concat("\x19Ethereum Signed Message:\n", bytes(Strings.toString(message.length)), message));
+        return hash;
     }
 
     function recoverSigner(string memory _message, bytes memory _sig) public pure returns (address) {
@@ -99,7 +119,8 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
         }
 
         if (v < 27) v += 27;
-        return ecrecover(ethSignedMessageHash, v, r, s);
+        address recovered = ecrecover(ethSignedMessageHash, v, r, s);
+        return recovered;
     }
 
     // Function to remove a mapping between a domain and contract address
@@ -120,5 +141,16 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
     // Function to delete an unwanted entry if it was maliciously registered
     function deleteDomain(string memory domain) external onlyAdmin {
         delete registry[domain];
+    }
+
+    /**
+     * Allow withdraw of Link tokens from the contract
+     */
+    function withdrawLink() public onlyAdmin {
+        LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
+        require(
+            link.transfer(msg.sender, link.balanceOf(address(this))),
+            "Unable to transfer"
+        );
     }
 }
