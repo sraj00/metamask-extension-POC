@@ -13,6 +13,11 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
         address owner;
         address[] addresses;
     }
+    
+    struct DomainRequest {
+        string domain;
+        address contractAddress;
+    }
 
     address public admin;
     string public txtRecord;
@@ -21,7 +26,7 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
 
     // Mapping to store domain addresses
     mapping (string => Addresses) registry;
-    mapping(bytes32 => string) private requestToDomain;
+    mapping(bytes32 => DomainRequest) private requestToDomain;
     mapping(string => address) private pendingRegistrations;
 
     modifier onlyAdmin() {
@@ -52,17 +57,18 @@ contract DomainRegistry is ChainlinkClient, ConfirmedOwner {
         req.add('get', 'https://dns.google.com/resolve?name=${domain}&type=TXT');
         
         bytes32 requestId = sendChainlinkRequest(req, fee);
-        requestToDomain[requestId] = domain;
+        requestToDomain[requestId] = DomainRequest(domain, contractAddress);
         pendingRegistrations[domain] = msg.sender;
     }
 
         // New function to handle Chainlink callback
     function fulfillDNSVerification(bytes32 requestId, bytes memory bytesData) public recordChainlinkFulfillment(requestId) {
-        string memory domain = requestToDomain[requestId];
+        DomainRequest memory domainRequest = requestToDomain[requestId];
+        string memory domain = domainRequest.domain;
+        address contractAddress = domainRequest.contractAddress;
         address user = pendingRegistrations[domain];
 
-        string sig = string(bytesData);
-        address recoveredSigner = recoverSigner(domain, sig);
+        address recoveredSigner = recoverSigner(domain, bytesData);
         
         if (recoveredSigner == user){
             registry[domain].owner = user;
