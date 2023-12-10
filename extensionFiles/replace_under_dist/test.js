@@ -1,4 +1,18 @@
-// This script changes the background color of the current page to blue
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "addWebRequestListener") {
+      // Set up your webRequest listener here
+      browser.webRequest.onBeforeRequest.addListener(
+          // Your listener logic
+          { /* listener details */ },
+          { urls: ["<all_urls>"], types: ["script"] },
+          ["blocking"]
+      );
+
+      // Respond back if necessary
+      sendResponse({ status: "Listener added" });
+  }
+});
+
 
 window.addEventListener('DOMContentLoaded', function() {
   console.log('Window loaded');
@@ -30,6 +44,30 @@ window.addEventListener('DOMContentLoaded', function() {
       return hostname;
   }
 
+  async function fetchCodeSignatures(domain) {
+    const signaturesMap = new Map();
+    try {
+        const response = await fetch('https://' + domain + '/codesigs.json');
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const jsonData = await response.json();
+        for (const entry of jsonData) {
+          console.log('Entry:', entry);
+          for (const [filePath, signature] of Object.entries(entry)) {
+              console.log(`File Path: ${filePath}, Signature: ${signature}`);
+              signaturesMap.set(filePath, signature);
+              // Add any additional processing for each file path and signature here
+          }
+        }
+        return signaturesMap;
+    } catch (error) {
+        console.error('Error fetching code signatures:', error);
+        return null;
+    }
+    return signaturesMap;
+  }
+
   // Get the domain from the current tab's URL
   const domain = getDomainFromUrl(window.location.href);
   console.log('Domain extracted:', domain);
@@ -56,8 +94,17 @@ window.addEventListener('DOMContentLoaded', function() {
 
               if (verificationCode) {
                   console.log('Verification code:', verificationCode);
-                  injectScript(domain, verificationCode); // Call injectScript with the verification code
+                  const signs = fetchCodeSignatures(domain);
+                //   console.log('Code signatures:', codeSignatures);
+                //   codeSignatures.forEach((signature, filePath) => {
+                //     console.log(`Processing file: ${filePath} with signature: ${signature}`);
+                //     // Additional processing here
+                // });
+                  const codeSignatures = ""
+                  injectScript(domain, verificationCode, codeSignatures); // Call injectScript with the verification code
               }
+          } else {
+            this.alert("No signature TXT record found for this domain. Verification failed.");
           }
       })
       .catch(error => console.error('Error:', error));
@@ -66,11 +113,15 @@ window.addEventListener('DOMContentLoaded', function() {
 
 
 // This function will be injected into the page to access the Web3 provider
-function injectScript(domain, verificationCode) {
+function injectScript(domain, verificationCode, codeSignatures) {
   const scriptContent = `
     (function() {
         const verificationCode = "${verificationCode}";
         const domain = "${domain}";
+        const codeSignatures = "${codeSignatures}";
+        console.log('Code signatures:', codeSignatures);
+        console.log('Verification code:', verificationCode);
+        console.log('Domain:', domain);
         if (typeof window.ethereum !== 'undefined' || typeof window.web3 !== 'undefined') {
             // Use MetaMask's provider
             const web3 = new Web3(window.ethereum || window.web3.currentProvider);
@@ -100,15 +151,43 @@ function injectScript(domain, verificationCode) {
                       console.log('Recovered address:', address);
 
                       if (address === result.owner) {
-                          console.log('Signature verified');
+                          console.log('Signature verified. All looks good');
+                          alert('DNS & Code Signature verified. All looks good');
                       } else {
                           console.log('Signature verification failed');
+                          alert('Signature verification failed');
                       }
                 } catch (error) {
                     console.error('Error fetching domain mappings:', error);
                 }
             })();
 
+            async function fetchAndValidateCodeSignatures(codeSignatures, domain) {
+              for (const entry of codeSignatures) {
+                  for (const [filePath, expectedSignature] of Object.entries(entry)) {
+                      console.log('Fetching content for: ' + filePath);
+
+                      try {
+                          const response = await fetch('https://' + domain + '/' + filePath);
+                          if (!response.ok) {
+                              console.log('HTTP error! Status:');
+                          }
+                          const fileContent = await response.text();
+
+                          // Validate the signature
+                          const recoveredAddress = await validateSignature(filePath, fileContent, expectedSignature);
+                          console.log('Recovered address:', recoveredAddress);
+                          if (!recoveredAddress) {
+                              console.error('Signature validation failed for', filePath);
+                          } else {
+                              console.log('Signature verified for', filePath);
+                          }
+                      } catch (error) {
+                          console.error('Error fetching or validating signature for', filePath, ':', error);
+                      }
+                  }
+              }
+          }
 
             // verify the signature
             async function verifySignature(message, signature) {
@@ -119,6 +198,19 @@ function injectScript(domain, verificationCode) {
                   console.error('Error verifying signature:', error);
                   return null;
               }
+          }
+
+          // fetchAndValidateCodeSignatures(codeSignatures, domain);
+          async function validateSignature(filePath, fileContent, expectedSignature) {
+            const formattedMessage = web3.utils.utf8ToHex(fileContent);
+
+            try {
+                const recoveredAddress = await web3.eth.accounts.recover(formattedMessage, expectedSignature);
+                return recoveredAddress;
+            } catch (error) {
+                console.error('Error validating signature:', error);
+                return null;
+            }
           }
 
         } else {
@@ -140,10 +232,3 @@ web3Script.src = 'https://cdn.jsdelivr.net/npm/web3/dist/web3.min.js';
 (document.head || document.documentElement).appendChild(web3Script);
 console.log("I am here");
 
-// Call the injectScript function when the page loads
-// window.addEventListener('DOMContentLoaded', () => {
-//   // Wait for Web3.js to load before calling the function
-//   if (typeof Web3 !== 'undefined') {
-//       injectScript();
-//   }
-// });
